@@ -498,6 +498,23 @@
             localStorage.setItem('victims', JSON.stringify(victimsData));
         }
 
+        async function fetchVictims() {
+            try {
+                const response = await fetch('/.netlify/functions/victims');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        victimsData = data;
+                        saveData();
+                        updateDashboard();
+                        showNotification('Loaded data from server');
+                    }
+                }
+            } catch (e) {
+                console.log('Using local data only');
+            }
+        }
+
         function checkPassword() {
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('errorMessage');
@@ -511,6 +528,7 @@
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('dashboardContainer').style.display = 'block';
                     loadData();
+                    fetchVictims();
                 }, 1000);
             } else {
                 errorMsg.style.display = 'block';
