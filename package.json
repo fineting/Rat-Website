@@ -1,0 +1,21 @@
+// package.json (for Netlify Functions)
+{
+  "name": "logger-netlify",
+  "version": "1.0.0",
+  "description": "Logger API for Minecraft stealer",
+  "main": "index.js",
+  "scripts": {
+    "start": "netlify dev",
+    "build": "echo 'No build required'"
+  },
+  "dependencies": {
+    "mongodb": "^5.0.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^15.0.0",
+    "http-server": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

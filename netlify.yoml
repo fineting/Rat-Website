@@ -1,0 +1,49 @@
+# netlify.toml
+[build]
+  command = "echo 'No build required'"
+  functions = "functions"
+  publish = "."
+
+[functions]
+  directory = "functions"
+  node_builder = "esbuild"
+  external_node_modules = ["mongodb"]
+  included_files = ["node_modules/mongodb/**"]
+
+[functions.logger]
+  included_files = []
+  node_builder = "esbuild"
+
+[functions.get-data]
+  included_files = []
+  node_builder = "esbuild"
+
+[functions.clear-data]
+  included_files = []
+  node_builder = "esbuild"
+
+[dev]
+  framework = "#static"
+  command = "npx http-server"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, X-Password"
+
+# Environment variables template (add these in Netlify dashboard)
+# [context.production.environment]
+#   MONGODB_URI = "mongodb+srv://username:password@cluster.mongodb.net/logger"
